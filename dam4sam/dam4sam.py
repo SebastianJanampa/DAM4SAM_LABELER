@@ -232,13 +232,36 @@ class DAM4SAM(object):
 
             from functools import partial
             from dam4sam.utils.colab_box_selector import ColabMultiFrameBoxSelector
-            multi_box_selector = ColabMultiFrameBoxSelector(frames_dir)
+            multi_box_selector = ColabMultiFrameBoxSelector(
+                frames_dir,
+                partial(
+                    self.track_subjects,
+                    frames_dir=frames_dir, 
+                    output_dir=output_dir, 
+                    fp16=fp16, 
+                    save_bboxes=save_bboxes, 
+                    save_frames=save_frames, 
+                    save_video=save_video, 
+                    visualize=visualize, 
+                    print_logs=False
+                    )
+                )
             multi_box_selector.select()
         else:
             # running on a server
             multi_box_selector = MultiFrameBoxSelector()
             subjects_info = multi_box_selector.select_boxes(frames_dir)
-            self.track_subjects(subjects_info, frames_dir, output_dir, fp16, save_bboxes, save_frames, save_video, visualize, print_logs=False)
+            self.track_subjects(
+                subjects_info, 
+                frames_dir, 
+                output_dir, 
+                fp16, 
+                save_bboxes, 
+                save_frames, 
+                save_video, 
+                visualize, 
+                print_logs=False
+                )
 
 
     def track_subjects(self, 
