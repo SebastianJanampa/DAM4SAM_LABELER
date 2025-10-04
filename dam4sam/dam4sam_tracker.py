@@ -142,7 +142,7 @@ class DAM4SAMTracker():
         unique_frames = list({frame_idx for obj in subjects_info.values() for frame_idx in obj['frame_info'].keys()})
         if 0 not in unique_frames:
             unique_frames.insert(0, 0)
-        print(unique_frames)
+        # print(unique_frames)
 
         if type(init_mask) is list:
             init_mask = init_mask[0]

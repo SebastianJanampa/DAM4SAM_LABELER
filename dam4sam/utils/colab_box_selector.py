@@ -15,7 +15,7 @@ class ColabMultiFrameBoxSelector:
     An interactive tool for annotating objects with persistent IDs across multiple images
     of the same dimensions. This version clamps all bounding boxes upon finishing.
     """
-    def __init__(self, image_paths: list):
+    def __init__(self, image_paths: list, on_finish_callback=None):
         if not image_paths:
             raise ValueError("image_paths list cannot be empty.")
             
@@ -39,10 +39,9 @@ class ColabMultiFrameBoxSelector:
         self.active_object_id = None
         self.image, self.img_height, self.img_width = None, 0, 0
 
-        self.results = {}
+        self.on_finish_callback = on_finish_callback # Store the callback function
+        self.results = None
 
-        self.is_finished = False
-        
         self._setup_ui()
         self._load_image_and_update_state()
 
@@ -131,10 +130,15 @@ class ColabMultiFrameBoxSelector:
         
         for widget in self.ui_container.children: widget.disabled = True
         b.description = "✅ Done!"
-        self.stop_gui = True
-        self.ui_container.close()
         
-    
+        with self.output_widget:
+            clear_output(wait=True)
+            print("Annotation session finished! Triggering tracking process...")
+        
+        # This is the crucial part: call the callback with the results
+        if self.on_finish_callback:
+            self.on_finish_callback(self.results)
+        
     def _load_image_and_update_state(self):
         active_path = self.image_paths[self.active_image_idx]
         self.image_slider.description = os.path.basename(active_path)
@@ -232,18 +236,14 @@ class ColabMultiFrameBoxSelector:
         return final_output
 
     def select(self):
-        self.stop_gui = False
-        del self.results
-        self.results = {}
 
-        while not self.stop_gui:
-            self.image_slider.observe(self._on_image_changed, names='value')
-            self.object_selector.observe(self._on_object_changed, names='value')
-            self.add_new_id_button.on_click(self._on_add_new_id_click)
-            self.add_existing_button.on_click(self._on_add_existing_id_click)
-            self.delete_button.on_click(self._on_delete_object_click)
-            self.finish_button.on_click(self._on_finish_click)
-            for s in self.sliders: s.observe(self._on_slider_move, names='value')
-            display(self.ui_container)
-        
-        return self.results
+        display(self.ui_container)
+        self.image_slider.observe(self._on_image_changed, names='value')
+        self.object_selector.observe(self._on_object_changed, names='value')
+        self.add_new_id_button.on_click(self._on_add_new_id_click)
+        self.add_existing_button.on_click(self._on_add_existing_id_click)
+        self.delete_button.on_click(self._on_delete_object_click)
+        self.finish_button.on_click(self._on_finish_click)
+        for s in self.sliders: s.observe(self._on_slider_move, names='value')
+    
+

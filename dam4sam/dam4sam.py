@@ -180,15 +180,6 @@ class DAM4SAM(object):
         input_dir = self.check_input(input_dir)
         frames_dir = sorted(glob.glob(os.path.join(input_dir, f'*.{file_extension}')))
 
-        save_bboxes = save_bboxes if output_dir is not None else False
-        save_frames = save_frames if output_dir is not None else False
-        visualize = visualize if output_dir is not None else True
-
-        if save_video:
-            if not save_frames:
-                save_frames = True
-                logger.info("We need frames to create the video. Changing saves_frames to True.")
-
         # Create output directories
         if output_dir:
             # If the specified directory exists, find a new unique name by appending a number
@@ -205,6 +196,20 @@ class DAM4SAM(object):
             if save_bboxes:
                 labels_dir = os.path.join(output_dir, 'labels')
                 os.makedirs(labels_dir)
+        else:
+            save_bboxes = False
+            save_frames = False
+            visualize = True
+
+        if save_video:
+            if not save_frames:
+                save_frames = True
+                output_dir = './tmp'
+                annotated_frames_dir = os.path.join(output_dir, 'annotated_frames')
+                os.makedirs(annotated_frames_dir)
+                logger.info("⚠️⚠️⚠️ We need frames to create the video. Changing saves_frames to True.")
+                logger.info("⚠️⚠️⚠️ Changing saves_frames to True.")
+                logger.info("⚠️⚠️⚠️ Setting output_dir as './tmp'.")
 
         # Print information
         logger.info("-" * 50)
@@ -223,15 +228,75 @@ class DAM4SAM(object):
         # Multi-box selection
         if os.getenv("COLAB_RELEASE_TAG") or 'COLAB_GPU' in os.environ:
             logger.info("Running on Google Colab")
+            visualize = False # colab does not support video visualization
+
+            from functools import partial
             from dam4sam.utils.colab_box_selector import ColabMultiFrameBoxSelector
             multi_box_selector = ColabMultiFrameBoxSelector(frames_dir)
             multi_box_selector.select()
-            subjects_info = multi_box_selector.results
-            visualize = False # colab does not support video visualization
         else:
             # running on a server
             multi_box_selector = MultiFrameBoxSelector()
             subjects_info = multi_box_selector.select_boxes(frames_dir)
+            self.track_subjects(subjects_info, frames_dir, output_dir, fp16, save_bboxes, save_frames, save_video, visualize, print_logs=False)
+
+
+    def track_subjects(self, 
+        subjects_info, 
+        frames_dir, 
+        output_dir=None, 
+        fp16=True, 
+        save_bboxes=True, 
+        save_frames=True, 
+        save_video=True, 
+        visualize=True, 
+        print_logs=True
+        ):
+
+        if print_logs:
+            if output_dir:
+                # If the specified directory exists, find a new unique name by appending a number
+                base_dir = output_dir
+                counter = 1
+                while os.path.exists(output_dir) and not exist_ok:
+                    output_dir = f"{base_dir}{counter}"
+                    counter += 1
+
+            if save_video:
+                if not save_frames:
+                    save_frames = True
+                    output_dir = './tmp'
+                    annotated_frames_dir = os.path.join(output_dir, 'annotated_frames')
+                    os.makedirs(annotated_frames_dir)
+                    logger.info("⚠️⚠️⚠️ We need frames to create the video. Changing saves_frames to True.")
+                    logger.info("⚠️⚠️⚠️ Changing saves_frames to True.")
+                    logger.info("⚠️⚠️⚠️ Setting output_dir as './tmp'.")
+
+                
+            first_file_path = frames_dir[0]
+            # Extract the directory path from the first file's path
+            input_dir = os.path.dirname(first_file_path)
+            logger.info("-" * 50)
+            logger.info("Setting up variables")
+            logger.info(f"  -> Model:                {self.model_name}")
+            logger.info(f"  -> Using fp16:           {'Yes' if fp16 else 'No'}")
+            logger.info(f"  -> Input Directory:      {os.path.abspath(input_dir)}")
+            logger.info(f"  -> Output Directory:     {os.path.abspath(output_dir) if output_dir else 'None (only visualization mode)'}")
+            logger.info(f"  -> Save bounding boxes:  {'Yes' if save_bboxes else 'No'}")
+            logger.info(f"  -> Save image frames:    {'Yes' if save_frames else 'No'}")
+            logger.info(f"  -> Save vide:            {'Yes' if save_video else 'No'}")
+            logger.info(f"  -> Visualization mode:   {'Yes' if visualize else 'No'}")
+            logger.info(f"  -> Frames to process:    {len(frames_dir)}")
+            logger.info("-" * 50)
+
+        if output_dir:
+            if save_frames:
+                annotated_frames_dir = os.path.join(output_dir, 'annotated_frames')
+                os.makedirs(annotated_frames_dir, exist_ok=True)
+            if save_bboxes:
+                labels_dir = os.path.join(output_dir, 'labels')
+                os.makedirs(labels_dir, exist_ok=True)
+
         if not subjects_info:
             print('Error: No initialization boxes were given')
             return
