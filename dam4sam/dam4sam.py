@@ -12,6 +12,7 @@ from tqdm import tqdm
 
 from dam4sam.global_vars import MODELS, COLORS_BGR
 from dam4sam.video2frame import extract_and_resize_frames
+from dam4sam.frame2video import create_video_from_frames
 from dam4sam.dam4sam_tracker import DAM4SAMTracker
 
 from dam4sam.utils.multi_box_selector import MultiFrameBoxSelector
@@ -54,7 +55,6 @@ class DAM4SAM(object):
     def __init__(self, model):
         super().__init__()
         self.load_model(model) 
-        self.multi_box_selector = MultiFrameBoxSelector()
 
     def load_model(self, model):
         self.model_name = model
@@ -150,6 +150,19 @@ class DAM4SAM(object):
         return output_dir
 
 
+    @staticmethod
+    def convert_frames2video(frames_dir, output_file=None, file_extension='jpg', exist_ok=False, fps=30):
+        if output_file is None:
+            output_file = './demo_output.mp4'
+
+        base_file = output_file
+        counter = 1
+        while os.path.exists(output_file) and not exist_ok:
+            output_file = f"{base_file}{counter}"
+            counter += 1
+
+        create_video_from_frames(frames_dir, file_extension, output_file, fps)
+
     def track(
         self, 
         input_dir, 
@@ -159,6 +172,8 @@ class DAM4SAM(object):
         visualize=True,
         save_bboxes=True,
         save_frames=True,
+        save_video=True,
+        out_video_name=None,
         exist_ok=False,
         ):
 
@@ -168,6 +183,11 @@ class DAM4SAM(object):
         save_bboxes = save_bboxes if output_dir is not None else False
         save_frames = save_frames if output_dir is not None else False
         visualize = visualize if output_dir is not None else True
+
+        if save_video:
+            if not save_frames:
+                save_frames = True
+                logger.info("We need frames to create the video. Changing saves_frames to True.")
 
         # Create output directories
         if output_dir:
@@ -195,12 +215,23 @@ class DAM4SAM(object):
         logger.info(f"  -> Output Directory:     {os.path.abspath(output_dir) if output_dir else 'None (only visualization mode)'}")
         logger.info(f"  -> Save bounding boxes:  {'Yes' if save_bboxes else 'No'}")
         logger.info(f"  -> Save image frames:    {'Yes' if save_frames else 'No'}")
+        logger.info(f"  -> Save vide:            {'Yes' if save_video else 'No'}")
         logger.info(f"  -> Visualization mode:   {'Yes' if visualize else 'No'}")
         logger.info(f"  -> Frames to process:    {len(frames_dir)}")
         logger.info("-" * 50)
 
         # Multi-box selection
-        subjects_info = self.multi_box_selector.select_boxes(frames_dir)
+        if os.getenv("COLAB_RELEASE_TAG") or 'COLAB_GPU' in os.environ:
+            logger.info("Running on Google Colab")
+            from dam4sam.utils.colab_box_selector import ColabMultiFrameBoxSelector
+            multi_box_selector = ColabMultiFrameBoxSelector(frames_dir)
+            multi_box_selector.select()
+            subjects_info = selector.results
+            visualize = False # colab does not support video visualization
+        else:
+            # running on a server
+            multi_box_selector = MultiFrameBoxSelector()
+            subjects_info = multi_box_selector.select_boxes(frames_dir)
         if not subjects_info:
             print('Error: No initialization boxes were given')
             return
@@ -301,7 +332,11 @@ class DAM4SAM(object):
         else:
             logger.info("Segmenting Done.")
 
+        if save_video:
+            self.convert_frames2video(annotated_frames_dir, out_video_name)
+
+
+            
 
 
 
-        

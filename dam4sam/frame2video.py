@@ -4,14 +4,14 @@ import argparse
 import cv2
 from tqdm import tqdm
 
-def create_video_from_frames(frames_dir, file_extension, output_path, fps):
+def create_video_from_frames(frames_dir, file_extension, ouput_file, fps):
     """
     Creates a video from a sequence of image frames.
 
     Args:
         frames_dir (str): Path to the directory containing the image frames.
         file_extension (str): The file extension of the frames (e.g., 'jpg', 'png').
-        output_path (str): The full path for the output video file.
+        ouput_file (str): The full path for the output video file.
         fps (int): The frames per second for the output video.
     """
     # 1. Get and sort the list of frame files
@@ -32,20 +32,20 @@ def create_video_from_frames(frames_dir, file_extension, output_path, fps):
     # 3. Initialize the VideoWriter object
     # Using 'mp4v' codec which is widely supported for .mp4 files.
     fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
-    out = cv2.VideoWriter(output_path, fourcc, fps, frame_size)
+    out = cv2.VideoWriter(ouput_file, fourcc, fps, frame_size)
     
     if not out.isOpened():
-        print(f"Error: Could not open video writer for path '{output_path}'")
+        print(f"Error: Could not open video writer for path '{ouput_file}'")
         return
 
     # --- Informative Printouts ---
     print("-" * 50)
     print("Starting Video Creation")
-    print(f"  -> Input Directory:  {os.path.abspath(frames_dir)}")
-    print(f"  -> Output Video Path: {os.path.abspath(output_path)}")
-    print(f"  -> Frame Count:        {len(image_files)}")
-    print(f"  -> Video Dimensions:   {width}x{height}")
-    print(f"  -> Frames Per Second:  {fps}")
+    print(f"  -> Input Directory:     {os.path.abspath(frames_dir)}")
+    print(f"  -> Output Video Path:   {os.path.abspath(ouput_file)}")
+    print(f"  -> Frame Count:         {len(image_files)}")
+    print(f"  -> Video Dimensions:    {width}x{height}")
+    print(f"  -> Frames Per Second:   {fps}")
     print("-" * 50)
 
     # 4. Loop through all frames and write them to the video
@@ -56,7 +56,7 @@ def create_video_from_frames(frames_dir, file_extension, output_path, fps):
     # 5. Release the VideoWriter and clean up
     out.release()
     print("\nVideo creation complete.")
-    print(f"Video saved successfully to: {output_path}")
+    print(f"Video saved successfully to: {ouput_file}")
 
 def main():
     parser = argparse.ArgumentParser(description='Create a video from a directory of sequential frames.')
