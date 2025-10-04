@@ -301,16 +301,16 @@ class DAM4SAM(object):
         logger.info("-" * 50)
         logger.info("Setting up variables")
         logger.info(f"  -> Model:                {self.model_name}")
-        logger.info(f"  -> Using fp16:           {'Yes' if fp16 else 'No'}")
-        logger.info(f"  -> Input Directory:      {os.path.abspath(input_dir)}")
-        logger.info(f"  -> Output Directory:     {os.path.abspath(output_dir) if output_dir else 'None (only visualization mode)'}")
-        logger.info(f"  -> Save bounding boxes:  {'Yes' if save_bboxes else 'No'}")
-        logger.info(f"  -> Save image frames:    {'Yes' if save_frames else 'No'}")
-        logger.info(f"  -> Save vide:            {'Yes' if save_video else 'No'}")
-        logger.info(f"  -> Visualization mode:   {'Yes' if visualize else 'No'}")
-        logger.info(f"  -> Frames to process:    {len(frames_dir)}")
+        logger.info(f"  -> Using fp16:           {'Yes' if self.fp16 else 'No'}")
+        logger.info(f"  -> Input Directory:      {os.path.abspath(self.input_dir)}")
+        logger.info(f"  -> Output Directory:     {os.path.abspath(self.output_dir) if output_dir else 'None (only visualization mode)'}")
+        logger.info(f"  -> Save bounding boxes:  {'Yes' if self.save_bboxes else 'No'}")
+        logger.info(f"  -> Save image frames:    {'Yes' if self.save_frames else 'No'}")
+        logger.info(f"  -> Save vide:            {'Yes' if self.save_video else 'No'}")
+        logger.info(f"  -> Visualization mode:   {'Yes' if self.visualize else 'No'}")
+        logger.info(f"  -> Frames to process:    {len(self.frames_dir)}")
         logger.info("-" * 50)
-        
+
         if is_colab:
             logger.info("Running on Google Colab. Please use the widget below to select boxes.")
             from dam4sam.utils.colab_box_selector import ColabMultiFrameBoxSelector
