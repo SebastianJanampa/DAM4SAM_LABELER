@@ -206,7 +206,7 @@ class DAM4SAM(object):
                 save_frames = True
                 output_dir = './tmp'
                 annotated_frames_dir = os.path.join(output_dir, 'annotated_frames')
-                os.makedirs(annotated_frames_dir)
+                os.makedirs(annotated_frames_dir, exist_ok=True)
                 logger.info("⚠️⚠️⚠️ We need frames to create the video. Changing saves_frames to True.")
                 logger.info("⚠️⚠️⚠️ Changing saves_frames to True.")
                 logger.info("⚠️⚠️⚠️ Setting output_dir as './tmp'.")

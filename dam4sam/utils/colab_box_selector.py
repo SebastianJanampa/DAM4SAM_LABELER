@@ -217,8 +217,8 @@ class ColabMultiFrameBoxSelector:
                 # The bottom-right (x2, y2) must be <= dimension.
                 clamped_x1 = min(max(0, x1), img_w-1)
                 clamped_y1 = min(max(0, y1), img_h-1)
-                clamped_x2 = max(min(img_w, x2), img_w-1)
-                clamped_y2 = max(min(img_h, y2), img_h-1)
+                clamped_x2 = min(img_w-1, x2)
+                clamped_y2 = min(img_h-1, y2)
                 
                 # Recalculate width and height from the clamped corners.
                 # This correctly handles boxes that are partially or fully outside.
