@@ -1,8 +1,9 @@
+import os
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
-import os
 import pprint
+import threading
+import matplotlib.pyplot as plt
 
 
 if os.getenv("COLAB_RELEASE_TAG") or 'COLAB_GPU' in os.environ:
@@ -39,7 +40,9 @@ class ColabMultiFrameBoxSelector:
         self.active_object_id = None
         self.image, self.img_height, self.img_width = None, 0, 0
 
-        self.results = None
+        self.results = {}
+
+        self.finished_event = threading.Event()
         
         self._setup_ui()
         self._load_image_and_update_state()
@@ -234,6 +237,9 @@ class ColabMultiFrameBoxSelector:
         return final_output
 
     def select(self):
+        del self.results
+        self.results = {}
+
         display(self.ui_container)
         self.image_slider.observe(self._on_image_changed, names='value')
         self.object_selector.observe(self._on_object_changed, names='value')
