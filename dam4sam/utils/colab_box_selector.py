@@ -131,7 +131,7 @@ class ColabMultiFrameBoxSelector:
         
         for widget in self.ui_container.children: widget.disabled = True
         b.description = "✅ Done!"
-        
+        self.stop_gui = True
         self.ui_container.close()
         
     
@@ -232,10 +232,10 @@ class ColabMultiFrameBoxSelector:
         return final_output
 
     def select(self):
+        self.stop_gui = False
         del self.results
         self.results = {}
 
-        display(self.ui_container)
         self.image_slider.observe(self._on_image_changed, names='value')
         self.object_selector.observe(self._on_object_changed, names='value')
         self.add_new_id_button.on_click(self._on_add_new_id_click)
@@ -243,8 +243,9 @@ class ColabMultiFrameBoxSelector:
         self.delete_button.on_click(self._on_delete_object_click)
         self.finish_button.on_click(self._on_finish_click)
         for s in self.sliders: s.observe(self._on_slider_move, names='value')
+        display(self.ui_container)
 
-        print('done selecting bbox')
-        display(self.ui_container, wait=True)
+        while not self.stop_gui:
+            pass
         
         return self.results
