@@ -1,9 +1,7 @@
 import os
 import cv2
-import time
 import numpy as np
 import pprint
-import threading
 import matplotlib.pyplot as plt
 
 
@@ -134,10 +132,7 @@ class ColabMultiFrameBoxSelector:
         for widget in self.ui_container.children: widget.disabled = True
         b.description = "✅ Done!"
         
-        with self.output_widget:
-            clear_output(wait=True)
-            print("Annotation session finished! Triggering tracking process...")
-        self.is_finished = True
+        self.ui_container.close()
         
     
     def _load_image_and_update_state(self):
@@ -249,12 +244,6 @@ class ColabMultiFrameBoxSelector:
         self.finish_button.on_click(self._on_finish_click)
         for s in self.sliders: s.observe(self._on_slider_move, names='value')
 
-        # --- MODIFICATION: New responsive wait loop ---
-        while not self.is_finished:
-            # This line is the key: it processes frontend events (like button clicks)
-            # without giving up control of the cell.
-            get_ipython().kernel.do_one_iteration()
-            # A short sleep to prevent the loop from running too fast and wasting CPU
-            time.sleep(0.01)
+       display(self.ui_container, wait=True)
         
         return self.results
