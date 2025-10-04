@@ -220,7 +220,9 @@ class DAM4SAM(object):
         logger.info(f"  -> Output Directory:     {os.path.abspath(output_dir) if output_dir else 'None (only visualization mode)'}")
         logger.info(f"  -> Save bounding boxes:  {'Yes' if save_bboxes else 'No'}")
         logger.info(f"  -> Save image frames:    {'Yes' if save_frames else 'No'}")
-        logger.info(f"  -> Save vide:            {'Yes' if save_video else 'No'}")
+        logger.info(f"  -> Save video:           {'Yes' if save_video else 'No'}")
+        if save_video:
+            logger.info(f"  -> Video output file:    {out_video_name}")
         logger.info(f"  -> Visualization mode:   {'Yes' if visualize else 'No'}")
         logger.info(f"  -> Frames to process:    {len(frames_dir)}")
         logger.info("-" * 50)
@@ -243,6 +245,7 @@ class DAM4SAM(object):
                     save_frames=save_frames, 
                     save_video=save_video, 
                     visualize=visualize, 
+                    out_video_name=out_video_name,
                     print_logs=False
                     )
                 )
@@ -260,6 +263,7 @@ class DAM4SAM(object):
                 save_frames, 
                 save_video, 
                 visualize, 
+                out_video_name,
                 print_logs=False
                 )
 
@@ -273,6 +277,7 @@ class DAM4SAM(object):
         save_frames=True, 
         save_video=True, 
         visualize=True, 
+        out_video_name=None,
         print_logs=True
         ):
 
@@ -307,7 +312,9 @@ class DAM4SAM(object):
             logger.info(f"  -> Output Directory:     {os.path.abspath(output_dir) if output_dir else 'None (only visualization mode)'}")
             logger.info(f"  -> Save bounding boxes:  {'Yes' if save_bboxes else 'No'}")
             logger.info(f"  -> Save image frames:    {'Yes' if save_frames else 'No'}")
-            logger.info(f"  -> Save vide:            {'Yes' if save_video else 'No'}")
+            logger.info(f"  -> Save video:           {'Yes' if save_video else 'No'}")
+            if save_video:
+                logger.info(f"  -> Video output file:    {out_video_name}")
             logger.info(f"  -> Visualization mode:   {'Yes' if visualize else 'No'}")
             logger.info(f"  -> Frames to process:    {len(frames_dir)}")
             logger.info("-" * 50)
