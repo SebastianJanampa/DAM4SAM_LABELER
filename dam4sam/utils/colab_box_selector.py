@@ -236,16 +236,14 @@ class ColabMultiFrameBoxSelector:
         del self.results
         self.results = {}
 
-        self.image_slider.observe(self._on_image_changed, names='value')
-        self.object_selector.observe(self._on_object_changed, names='value')
-        self.add_new_id_button.on_click(self._on_add_new_id_click)
-        self.add_existing_button.on_click(self._on_add_existing_id_click)
-        self.delete_button.on_click(self._on_delete_object_click)
-        self.finish_button.on_click(self._on_finish_click)
-        for s in self.sliders: s.observe(self._on_slider_move, names='value')
-        display(self.ui_container)
-
         while not self.stop_gui:
-            pass
+            self.image_slider.observe(self._on_image_changed, names='value')
+            self.object_selector.observe(self._on_object_changed, names='value')
+            self.add_new_id_button.on_click(self._on_add_new_id_click)
+            self.add_existing_button.on_click(self._on_add_existing_id_click)
+            self.delete_button.on_click(self._on_delete_object_click)
+            self.finish_button.on_click(self._on_finish_click)
+            for s in self.sliders: s.observe(self._on_slider_move, names='value')
+            display(self.ui_container)
         
         return self.results
