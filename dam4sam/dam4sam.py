@@ -163,49 +163,140 @@ class DAM4SAM(object):
 
         create_video_from_frames(frames_dir, file_extension, output_file, fps)
 
+
+    def _start_tracking_after_annotation(self, subjects_info):
+        """
+        This is the second part of the tracking logic. 
+        """
+        if not subjects_info:
+            logger.error('No initialization boxes were given. Aborting.')
+            return
+        
+        logger.info(f'Using boxes for tracking:')
+        pprint.pprint(subjects_info)
+
+        # Re-create necessary variables from the instance
+        output_dir = self.output_dir
+        save_frames = self.save_frames
+        save_bboxes = self.save_bboxes
+        annotated_frames_dir = os.path.join(output_dir, 'annotated_frames') if save_frames else None
+        labels_dir = os.path.join(output_dir, 'labels') if save_bboxes else None
+
+        # --- RESTORED: Setup for live visualization ---
+        if self.visualize:
+            window_name = 'DAM4SAM Tracking'
+            cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+            wait_ = 1
+
+        pil_images = [Image.open(p).convert("RGB") for p in self.frames_dir]
+        user_stop = False
+        logger.info("Segmenting Frames")
+        with tqdm(total=len(self.frames_dir), desc="Tracking", unit="frame") as pbar:
+            for i, (frame_path, img) in enumerate(zip(self.frames_dir, pil_images)):
+                img_vis = np.array(img)
+                img_h, img_w, _ = img_vis.shape
+
+                if i == 0:
+                    outputs = self.tracker.initialize(pil_images, None, subjects_info=subjects_info, use_fp16=self.fp16)
+                else:
+                    outputs = self.tracker.track(img, use_fp16=self.fp16)
+                
+                lines_for_label_file = []
+                for obj_id, mask in outputs.items():
+                    mask_coords = np.column_stack(np.where(mask > 0)[::-1])
+                    if mask_coords.size == 0: continue 
+                    x, y, w, h = cv2.boundingRect(mask_coords)
+
+                    # --- RESTORED: Condition for drawing overlays ---
+                    if self.visualize or save_frames:
+                        color_bgr = COLORS_BGR[obj_id % len(COLORS_BGR)]
+                        overlay_mask(img_vis, mask, color_bgr, line_width=1, alpha=0.5)
+                        cv2.rectangle(img_vis, (x, y), (x + w, y + h), color_bgr, 2)
+                        draw_text_with_background(scene=img_vis, text=f"ID: {obj_id}", pos=(x, y - 5), bg_color=color_bgr)
+                    
+                    if save_bboxes:
+                        norm_x1, norm_y1, norm_x2, norm_y2 = x/img_w, y/img_h, (x+w)/img_w, (y+h)/img_h
+                        lines_for_label_file.append(f"{obj_id} {norm_x1:.6f} {norm_y1:.6f} {norm_x2:.6f} {norm_y2:.6f}")
+                
+                if save_frames:
+                    base_name = os.path.splitext(os.path.basename(frame_path))[0]
+                    annotated_frame_path = os.path.join(annotated_frames_dir, f'{base_name}.jpg')
+                    cv2.imwrite(annotated_frame_path, cv2.cvtColor(img_vis, cv2.COLOR_RGB_BGR))
+                if save_bboxes:
+                    base_name = os.path.splitext(os.path.basename(frame_path))[0]
+                    label_path = os.path.join(labels_dir, f'{base_name}.txt')
+                    with open(label_path, 'w') as f: f.write('\n'.join(lines_for_label_file))
+                
+                # --- RESTORED: cv2.imshow call and keyboard controls ---
+                if self.visualize: 
+                    cv2.imshow(window_name, cv2.cvtColor(img_vis, cv2.COLOR_RGB_BGR))
+                    key_ = cv2.waitKey(wait_)
+                    if key_ in [27, ord('q')]: user_stop = True; break
+                    elif key_ == 32: wait_ = 1 - wait_
+                
+                if VRAM_SUPPORT:
+                    vram_used_mb = torch.cuda.memory_allocated() / (1024**2)
+                    p_bar.set_postfix_str(f"VRAM: {vram_used_mb:.2f} MB")
+                p_bar.update(1)
+
+        # --- RESTORED: Cleanup for visualization window ---
+        if self.visualize:
+            cv2.destroyAllWindows()
+        if user_stop:
+            logger.info('Code stopped by the user.')
+        else:
+            logger.info("Segmentation Done.")
+
+        if self.save_video and not user_stop:
+            self.convert_frames2video(annotated_frames_dir, self.out_video_name, exist_ok=self.exist_ok)
+
     def track(
         self, 
         input_dir, 
         output_dir=None, 
         file_extension='jpg',
         fp16=True,
-        visualize=True,
+        visualize=True, 
         save_bboxes=True,
         save_frames=True,
         save_video=True,
         out_video_name=None,
         exist_ok=False,
-        ):
+    ):
+        # Store parameters on the instance so the callback can access them
+        self.fp16 = fp16
+        self.out_video_name = out_video_name
+        self.exist_ok = exist_ok
 
         input_dir = self.check_input(input_dir)
-        frames_dir = sorted(glob.glob(os.path.join(input_dir, f'*.{file_extension}')))
+        self.frames_dir = sorted(glob.glob(os.path.join(input_dir, f'*.{file_extension}')))
+        
+        self.save_bboxes = save_bboxes if output_dir is not None else False
+        self.save_frames = save_frames if output_dir is not None else False
+        
+        is_colab = os.getenv("COLAB_RELEASE_TAG") or 'COLAB_GPU' in os.environ
+        
+        # --- MODIFICATION: Store visualize flag and handle logic correctly ---
+        self.visualize = visualize if not is_colab and output_dir is not None else False
+        if is_colab and visualize:
+            logger.warning("Live visualization with cv2.imshow is disabled in Colab.")
 
-        save_bboxes = save_bboxes if output_dir is not None else False
-        save_frames = save_frames if output_dir is not None else False
-        visualize = visualize if output_dir is not None else True
+        if save_video and not self.save_frames:
+            self.save_frames = True
+            logger.info("We need frames to create the video. Changing save_frames to True.")
 
-        if save_video:
-            if not save_frames:
-                save_frames = True
-                logger.info("We need frames to create the video. Changing saves_frames to True.")
-
-        # Create output directories
         if output_dir:
-            # If the specified directory exists, find a new unique name by appending a number
             base_dir = output_dir
             counter = 1
             while os.path.exists(output_dir) and not exist_ok:
                 output_dir = f"{base_dir}{counter}"
                 counter += 1
-            
-            # Create the new unique directory and its subdirectories
-            if save_frames:
-                annotated_frames_dir = os.path.join(output_dir, 'annotated_frames')
-                os.makedirs(annotated_frames_dir)
-            if save_bboxes:
-                labels_dir = os.path.join(output_dir, 'labels')
-                os.makedirs(labels_dir)
-
+            self.output_dir = output_dir
+            if self.save_frames: os.makedirs(os.path.join(output_dir, 'annotated_frames'), exist_ok=True)
+            if self.save_bboxes: os.makedirs(os.path.join(output_dir, 'labels'), exist_ok=True)
+        else:
+            self.output_dir = None
+        
         # Print information
         logger.info("-" * 50)
         logger.info("Setting up variables")
@@ -219,125 +310,17 @@ class DAM4SAM(object):
         logger.info(f"  -> Visualization mode:   {'Yes' if visualize else 'No'}")
         logger.info(f"  -> Frames to process:    {len(frames_dir)}")
         logger.info("-" * 50)
-
-        # Multi-box selection
-        print(os.getenv("COLAB_RELEASE_TAG") or 'COLAB_GPU' in os.environ)
-        if os.getenv("COLAB_RELEASE_TAG") or 'COLAB_GPU' in os.environ:
-            logger.info("Running on Google Colab")
+        
+        if is_colab:
+            logger.info("Running on Google Colab. Please use the widget below to select boxes.")
             from dam4sam.utils.colab_box_selector import ColabMultiFrameBoxSelector
-            multi_box_selector = ColabMultiFrameBoxSelector(frames_dir)
+            multi_box_selector = ColabMultiFrameBoxSelector(
+                self.frames_dir, 
+                on_finish_callback=self._start_tracking_after_annotation
+            )
             multi_box_selector.select()
-            subjects_info = multi_box_selector.results
-            visualize = False # colab does not support video visualization
-        else:
-            # running on a server
+        else: # Running locally
+            logger.info("Running locally. A new window will open to select boxes.")
             multi_box_selector = MultiFrameBoxSelector()
-            subjects_info = multi_box_selector.select_boxes(frames_dir)
-        if not subjects_info:
-            print('Error: No initialization boxes were given')
-            return
-                    
-        print(f'Using boxes for tracking:')
-        pprint.pprint(subjects_info)
-
-
-        # Set up live visualization
-        if visualize:
-            window_name = 'DAM4SAM Tracking'
-            cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
-            wait_ = 1
-
-
-        pil_images = []
-        for i, frame_path in enumerate(frames_dir): 
-            img = Image.open(frame_path).convert("RGB")
-            pil_images.append(img)
-
-        user_stop = False
-        logger.info("Segmenting Frames")
-        with tqdm(total=len(frames_dir), desc="Tracking", unit="frame") as pbar:
-            for i, frame_path in enumerate(frames_dir):
-                img = Image.open(frame_path).convert("RGB")
-                img_vis = np.array(img)
-                img_h, img_w, _ = img_vis.shape
-
-                if i == 0:
-                    outputs = self.tracker.initialize(pil_images, None, subjects_info=subjects_info, use_fp16=fp16)
-                else:
-                    outputs = self.tracker.track(img, use_fp16=fp16)
-                
-                lines_for_label_file = []
-
-                for obj_id, mask in outputs.items():
-                    # Get bounding box from mask
-                    mask_coords = np.column_stack(np.where(mask > 0)[::-1])
-                    if mask_coords.size == 0:
-                        continue 
-                    x, y, w, h = cv2.boundingRect(mask_coords)
-
-                    # Draw bounding boxes and masks of the current object
-                    if visualize or save_frames:
-                        color_bgr = COLORS_BGR[obj_id % len(COLORS_BGR)]
-                        overlay_mask(img_vis, mask, color_bgr, line_width=1, alpha=0.5)
-                        cv2.rectangle(img_vis, (x, y), (x + w, y + h), color_bgr, 2)
-                        
-                        draw_text_with_background(
-                            scene=img_vis,
-                            text=f"ID: {obj_id}",
-                            pos=(x, y - 5),
-                            bg_color=color_bgr
-                        )
-
-                    # Save bounding box (x1y1x2y2 format) of the current object
-                    if save_bboxes:
-                        norm_x1, norm_y1 = x / img_w, y / img_h
-                        norm_x2, norm_y2 = (x + w) / img_w, (y + h) / img_h
-                        
-                        bbox_str = f"{norm_x1:.8f} {norm_y1:.8f} {norm_x2:.8f} {norm_y2:.8f}"
-                        line = f"{bbox_str} {obj_id}"
-                        lines_for_label_file.append(line)
-
-                if save_frames:
-                    base_name = os.path.splitext(os.path.basename(frame_path))[0]
-                    annotated_frame_path = os.path.join(annotated_frames_dir, f'{base_name}.jpg')
-                    cv2.imwrite(annotated_frame_path, cv2.cvtColor(img_vis, cv2.COLOR_RGB2BGR))
-
-                if save_bboxes:
-                    label_path = os.path.join(labels_dir, f'{base_name}.txt')
-                    with open(label_path, 'w') as f:
-                        f.write('\n'.join(lines_for_label_file))
-
-                if visualize: 
-                    cv2.imshow(window_name, cv2.cvtColor(img_vis, cv2.COLOR_RGB2BGR))
-                    key_ = cv2.waitKey(wait_)
-                    
-                    if key_ == 27:  # Esc key to exit
-                        user_stop = True
-                        break
-                    elif key_ == ord('q'): # 'q' key to quit
-                        user_stop = True
-                        break
-                    elif key_ == 32:  # Spacebar to pause/play
-                        wait_ = 1 - wait_
-                
-                if VRAM_SUPPORT:
-                    vram_used_mb = torch.cuda.memory_allocated() / (1024**2)
-                    pbar.set_postfix_str(f"VRAM: {vram_used_mb:.2f} MB")
-                
-                pbar.update(1)
-
-        if visualize:
-            cv2.destroyAllWindows()
-        if user_stop:
-            logger.info('Code stop by the user.')
-        else:
-            logger.info("Segmenting Done.")
-
-        if save_video:
-            self.convert_frames2video(annotated_frames_dir, out_video_name)
-
-
-            
-
-
-
+            subjects_info = multi_box_selector.select_boxes(self.frames_dir)
+            self._start_tracking_after_annotation(subjects_info)

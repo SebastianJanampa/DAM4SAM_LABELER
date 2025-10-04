@@ -38,8 +38,10 @@ class ColabMultiFrameBoxSelector:
         self.active_image_idx = 0
         self.active_object_id = None
         self.image, self.img_height, self.img_width = None, 0, 0
-        self.results = None
 
+        self.on_finish_callback = on_finish_callback # Store the callback function
+        self.results = None
+        
         self._setup_ui()
         self._load_image_and_update_state()
 
@@ -125,10 +127,18 @@ class ColabMultiFrameBoxSelector:
     def _on_finish_click(self, b):
         self._on_slider_move(None)
         self.results = self._reformat_and_clamp_annotations()
+        
         for widget in self.ui_container.children: widget.disabled = True
         b.description = "✅ Done!"
-        with self.output_widget: clear_output(wait=True); print("Annotation session finished! Results are in `selector.results`.")
-
+        
+        with self.output_widget:
+            clear_output(wait=True)
+            print("Annotation session finished! Triggering tracking process...")
+        
+        # This is the crucial part: call the callback with the results
+        if self.on_finish_callback:
+            self.on_finish_callback(self.results)
+    
     def _load_image_and_update_state(self):
         active_path = self.image_paths[self.active_image_idx]
         self.image_slider.description = os.path.basename(active_path)
