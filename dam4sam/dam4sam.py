@@ -155,10 +155,10 @@ class DAM4SAM(object):
         if output_file is None:
             output_file = './demo_output.mp4'
 
-        base_file = output_file
+        base_name, extension = os.path.splitext(output_file)
         counter = 1
         while os.path.exists(output_file) and not exist_ok:
-            output_file = f"{base_file}{counter}"
+            output_file = f"{base_name}_{counter}{extension}"
             counter += 1
 
         create_video_from_frames(frames_dir, file_extension, output_file, fps)
@@ -207,9 +207,9 @@ class DAM4SAM(object):
                 output_dir = './tmp'
                 annotated_frames_dir = os.path.join(output_dir, 'annotated_frames')
                 os.makedirs(annotated_frames_dir, exist_ok=True)
-                logger.info("⚠️⚠️⚠️ We need frames to create the video. Changing saves_frames to True.")
-                logger.info("⚠️⚠️⚠️ Changing saves_frames to True.")
-                logger.info("⚠️⚠️⚠️ Setting output_dir as './tmp'.")
+                logger.info("⚠️ ⚠️ ⚠️ We need frames to create the video. Changing saves_frames to True.")
+                logger.info("⚠️ ⚠️ ⚠️ Changing saves_frames to True.")
+                logger.info("⚠️ ⚠️ ⚠️ Setting output_dir as './tmp'.")
 
         # Print information
         logger.info("-" * 50)
