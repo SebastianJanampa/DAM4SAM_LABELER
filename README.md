@@ -4,6 +4,12 @@
 </h2>
 
 <p align="center">
+  <a href="https://github.com/SebastianJanampa/DAM4SAMv2/blob/main/LICENSE">
+        <img alt="colab" src="https://img.shields.io/badge/license-apache%202.0-blue?style=for-the-badge">
+  </a>   
+</p>
+
+<p align="center">
 Sebastian Janampa (Developer)
 </p>
 
