@@ -244,6 +244,7 @@ class ColabMultiFrameBoxSelector:
         self.finish_button.on_click(self._on_finish_click)
         for s in self.sliders: s.observe(self._on_slider_move, names='value')
 
-       display(self.ui_container, wait=True)
+        print('done selecting bbox')
+        display(self.ui_container, wait=True)
         
         return self.results
