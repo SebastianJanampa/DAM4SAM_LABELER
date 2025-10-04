@@ -1,0 +1,5 @@
+checkpoints/
+dam4sam.egg-info
+**/__pycache__
+demo.mp4
+run.py
