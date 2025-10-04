@@ -4,7 +4,11 @@ import matplotlib.pyplot as plt
 import os
 import pprint
 
-# Cell 2: The Final Annotator Class
+
+if os.getenv("COLAB_RELEASE_TAG") or 'COLAB_GPU' in os.environ:
+    print('hi')
+    import ipywidgets as widgets
+    from IPython.display import display, clear_output
 
 class ColabMultiFrameBoxSelector:
     """
@@ -13,9 +17,6 @@ class ColabMultiFrameBoxSelector:
     """
     def __init__(self, image_paths: list):
         # We upload them here since we only need them for colab
-        import ipywidgets as widgets
-        from IPython.display import display, clear_output
-
         if not image_paths:
             raise ValueError("image_paths list cannot be empty.")
             

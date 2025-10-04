@@ -226,7 +226,7 @@ class DAM4SAM(object):
             from dam4sam.utils.colab_box_selector import ColabMultiFrameBoxSelector
             multi_box_selector = ColabMultiFrameBoxSelector(frames_dir)
             multi_box_selector.select()
-            subjects_info = selector.results
+            subjects_info = multi_box_selector.results
             visualize = False # colab does not support video visualization
         else:
             # running on a server
