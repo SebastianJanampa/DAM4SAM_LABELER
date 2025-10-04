@@ -221,6 +221,7 @@ class DAM4SAM(object):
         logger.info("-" * 50)
 
         # Multi-box selection
+        print(os.getenv("COLAB_RELEASE_TAG") or 'COLAB_GPU' in os.environ)
         if os.getenv("COLAB_RELEASE_TAG") or 'COLAB_GPU' in os.environ:
             logger.info("Running on Google Colab")
             from dam4sam.utils.colab_box_selector import ColabMultiFrameBoxSelector

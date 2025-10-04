@@ -6,17 +6,16 @@ import pprint
 
 
 if os.getenv("COLAB_RELEASE_TAG") or 'COLAB_GPU' in os.environ:
-    print('hi')
     import ipywidgets as widgets
     from IPython.display import display, clear_output
 
 class ColabMultiFrameBoxSelector:
+
     """
     An interactive tool for annotating objects with persistent IDs across multiple images
     of the same dimensions. This version clamps all bounding boxes upon finishing.
     """
     def __init__(self, image_paths: list):
-        # We upload them here since we only need them for colab
         if not image_paths:
             raise ValueError("image_paths list cannot be empty.")
             
