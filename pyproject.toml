@@ -72,6 +72,9 @@ export = []
 # Assumes your code is in a `<root>/dam4sam` directory.
 packages = { find = { where = ["."], include = ["dam4sam", "dam4sam.*"]} }
 
+[tool.setuptools.package-data]
+"dam4sam.sam2" = ["*.yaml"] 
+
 
 
 [tool.ruff]
