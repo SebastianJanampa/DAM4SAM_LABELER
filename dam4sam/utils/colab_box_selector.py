@@ -42,7 +42,7 @@ class ColabMultiFrameBoxSelector:
 
         self.results = {}
 
-        self.finished_event = threading.Event()
+        self.is_finished = False
         
         self._setup_ui()
         self._load_image_and_update_state()
@@ -136,9 +136,8 @@ class ColabMultiFrameBoxSelector:
         with self.output_widget:
             clear_output(wait=True)
             print("Annotation session finished! Triggering tracking process...")
+        self.is_finished = True
         
-        # Signal that the waiting is over
-        self.finished_event.set()
     
     def _load_image_and_update_state(self):
         active_path = self.image_paths[self.active_image_idx]
@@ -249,6 +248,12 @@ class ColabMultiFrameBoxSelector:
         self.finish_button.on_click(self._on_finish_click)
         for s in self.sliders: s.observe(self._on_slider_move, names='value')
 
-        self.finished_event.wait()
-
+        # --- MODIFICATION: New responsive wait loop ---
+        while not self.is_finished:
+            # This line is the key: it processes frontend events (like button clicks)
+            # without giving up control of the cell.
+            get_ipython().kernel.do_one_iteration()
+            # A short sleep to prevent the loop from running too fast and wasting CPU
+            time.sleep(0.01)
+        
         return self.results
