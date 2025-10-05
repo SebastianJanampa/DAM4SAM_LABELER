@@ -36,11 +36,28 @@ For the objects, it is not required that they share the same frames, since not a
 This feature provides the user with more flexibility and facilitates the segmentation/tracking process.
 
 
+https://github.com/user-attachments/assets/2bcac2a4-06cc-42f1-882c-0173e4c32f42
+
+
+## Video demos
+We show some videos on how to use the repo in a local server and in Colab.
+<details close>
+<summary> Local Server Demo </summary>
+  
+https://github.com/user-attachments/assets/bdc2c051-a058-4675-8f32-13dd244dba3c
+
+</details>
+
+<details close>
+<summary> Colab Notebook Demo </summary>
+
+https://github.com/user-attachments/assets/4f157338-aca4-4b36-a466-79d70577a013
+
+</details>
+
 ## 📝 TODO
 - [ ] Create Python package.
 - [ ] Report with evaluations (fps, memory usage, accuracy) on different datasets.
-- [ ] Upload video demos
-
 
 ## 🚀 Updates
 - [x] **\[2025.10.04\]** DAM4SAMv2 code release.
