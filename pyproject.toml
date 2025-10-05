@@ -12,11 +12,11 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "dam4sam"
 version = "0.0.1"
-description = "This library is the adaptation of DAM4SAM which allow multi-object tracking and use bounding boxes from different frames to initialize objects."
+description = "This library is the adaptation of DAM4SAM, which allows multi-object tracking and uses bounding boxes from different frames to initialize objects."
 readme = "README.md"
 requires-python = ">=3.8"
 license = { "text" = "APACHE-2.0" }
-keywords = ["deep-learning", "computer-vision", "transformer", "DETR"]
+keywords = ["deep-learning", "computer-vision", "sam2"]
 
 classifiers = [
     "Development Status :: 3 - Alpha",
